@@ -13,6 +13,8 @@ startupmodule.initialize = () ->
 ############################################################
 startupmodule.serviceStartup = ->
     log "startupmodule.serviceStartup"
+    
+
     return
 
 export default startupmodule

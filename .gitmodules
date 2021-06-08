@@ -1,0 +1,3 @@
+[submodule "source/index"]
+	path = source/index
+	url = git@github.com:JhonnyJason/service-sources-index.git
