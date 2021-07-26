@@ -16,6 +16,8 @@ specialAuth = {
     "startSession": isKnownClientSignature
 }
 
+validCodes = {}
+
 ############################################################
 authmodule.initialize = () ->
     log "authmodule.initialize"
@@ -38,16 +40,25 @@ isValidAuthCode = (code) ->
     olog {code}
     return
 
+generateNewAuthCode = (oldCode) ->
+    log "generateNewAuthCode"
+    throw new Error("Old Code Still Valid!") if validCodes[oldCode]?
+    olog {oldCode}
+    return
+
 #endregion
 
 ############################################################
+#region exposed Functions
 authmodule.authenticateRequest = (req, res, next) ->
     try
+        code = req.body.authCode
         if specialAuth[req.path]? 
             if specialAuth[req.path](req) then next()
             else throw new Error("Wrong Special Auth!")
-        else if isValidAuthCode(req.body.authCode) then next()
+        else if isValidAuthCode(code) then next()
         else throw new Error("Wrong Auth Code!")
+        generateNewAuthCode(code)
     catch err then res.send({error: err.stack})
 
 ############################################################
@@ -68,5 +79,7 @@ authmodule.addClient = (publicKey) ->
 authmodule.startSession = (publicKey) ->
     log "authmodule.startSession"
     return
-    
-module.exports = authmodule
+
+#endregion
+
+module.exports = authmodule 
