@@ -1,3 +1,12 @@
 [submodule "source/index"]
 	path = source/index
 	url = git@github.com:JhonnyJason/service-sources-index.git
+[submodule "source/scimodule"]
+	path = source/scimodule
+	url = git@github.com:JhonnyJason/service-sources-scimodule.git
+[submodule "source/sciroutes/datamanagementroutes"]
+	path = source/sciroutes/datamanagementroutes
+	url = git@github.com:JhonnyJason/datamanagementinterface.git
+[submodule "source/sciroutes/authenticationinterfaceroutes"]
+	path = source/sciroutes/authenticationinterfaceroutes
+	url = git@github.com:JhonnyJason/authenticationinterface.git
