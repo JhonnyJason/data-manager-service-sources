@@ -1,0 +1,22 @@
+
+scihandlers = {}
+
+############################################################
+#region authentication
+import auth from "./authmodule" 
+
+############################################################
+scihandlers.authenticate = auth.authenticateRequest
+
+#endregion
+
+{{#components}}
+############################################################
+#region {{{name}}}.coffee
+{{{coffee}}}
+#endregion
+
+{{/components}}
+
+
+export default scihandlers

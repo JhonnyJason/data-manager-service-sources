@@ -3,7 +3,7 @@ sciroutes = {}
 import h from "./scihandlers"
 
 ############################################################
-#region authenticationinterfaceroutes.coffee
+#region authenticationroutes.coffee
 ############################################################
 sciroutes.addClientToServe = (req, res) ->
     try
@@ -69,6 +69,5 @@ sciroutes.updateRestriction = (req, res) ->
 #endregion
 
 
-#endregion
 
 export default sciroutes
