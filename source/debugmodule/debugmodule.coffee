@@ -10,8 +10,9 @@ debugmodule.modulesToDebug =
     unbreaker: true
     authmodule: true
     # configmodule: true
-    memorydecaymodule: true
-    sessionmodule: true
+    datamodule: true
+    # memorydecaymodule: true
+    # sessionmodule: true
     # startupmodule: true
 
 #region exposed variables

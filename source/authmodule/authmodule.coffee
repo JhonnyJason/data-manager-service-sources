@@ -16,7 +16,7 @@ decay = null
 
 ############################################################
 specialAuth = null
-vaildCodeMemory = {}
+validCodeMemory = {}
 
 ############################################################
 authmodule.initialize = ->
@@ -28,10 +28,10 @@ authmodule.initialize = ->
 
     ########################################################
     ## TODO remove this code!
-    vaildCodeMemory["..."] = {}
+    validCodeMemory["..."] = {text:"I am a session!"}
     ##
 
-    decay.createMemoryObjectFor(vaildCodeMemory)
+    decay.createMemoryObjectFor(validCodeMemory)
     
 
     ########################################################
@@ -68,17 +68,28 @@ isKnownClientSignature = (req) ->
 isValidAuthCode = (code) ->
     log "isValidAuthCode"
     olog {code}
-    throw new Error("Invalid authCode!") unless vaildCodeMemory[code]?
-    sessionInfo = vaildCodeMemory[code]
-    delete vaildCodeMemory[code]
+    throw new Error("Invalid authCode!") unless validCodeMemory[code]?
+    sessionInfo = validCodeMemory[code]
+    delete validCodeMemory[code]
 
     session.putInfo(code, sessionInfo)
     return true
 
-generateNewAuthCode = (oldCode) ->
+generateNewAuthCode = (oldCode, req) ->
     log "generateNewAuthCode"
-    throw new Error("Old Code Still Valid!") if vaildCodeMemory[oldCode]?
     olog {oldCode}
+    if validCodeMemory[oldCode]?
+        log "oldCode still available in validCodeMemory!"
+        delete validCodeMemory[oldCode]
+        return
+    try
+        sessionInfo = session.getInfo(oldCode)
+        newCode = "..."
+        olog {newCode}
+        ## TODO generae real next Code
+        validCodeMemory[newCode] = sessionInfo
+        ## TODO letForget
+    catch err then log err.stack
     return
 
 #endregion
@@ -94,7 +105,7 @@ authmodule.authenticateRequest = (req, res, next) ->
             else throw new Error("Wrong Special Auth!")
         else if isValidAuthCode(code) then next()
         else throw new Error("Wrong Auth Code!")
-        generateNewAuthCode(code)
+        generateNewAuthCode(code, req)
     catch err then res.send({error: err.stack})
 
 ############################################################

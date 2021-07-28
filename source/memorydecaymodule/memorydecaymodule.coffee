@@ -25,7 +25,7 @@ memorydecaymodule.initialize = ->
 
 ############################################################
 memorydecaymodule.createMemoryObjectFor = (obj) ->
-    log "memorydecaymodule.createMemoryObjectFor"
+    # log "memorydecaymodule.createMemoryObjectFor"
     Object.defineProperty(
         obj, 
         "__memoryid", 
@@ -43,7 +43,7 @@ memorydecaymodule.createMemoryObjectFor = (obj) ->
 
 ############################################################
 memorydecaymodule.letForget = (key, obj, ms) ->
-    log "memorydecaymodule.letForget"
+    # log "memorydecaymodule.letForget"
     throw new Error("obj was no memoryObject!") unless obj.__memoryid?
     # log "memId: "+obj.__memoryid
     

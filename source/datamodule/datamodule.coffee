@@ -17,19 +17,20 @@ datamodule.initialize = () ->
 
 ############################################################
 #region exposedFunctions
-datamodule.storeFle = (nodeId, name, content) ->
-    log "datamodule.storeFle"
+datamodule.storeFile = (nodeId, name, content, sessionInfo) ->
+    log "datamodule.storeFile"
+    olog sessionInfo
     return
 
-datamodule.updateFile = (nodeId, name, content) ->
+datamodule.updateFile = (nodeId, name, content, sessionInfo) ->
     log "datamodule.updateFile"
     return
 
-datamodule.storeRestrictedFile = (nodeId, name, content, keys) ->
+datamodule.storeRestrictedFile = (nodeId, name, content, keys, sessionInfo) ->
     log "datamodule.storeRestrictedFile"
     return
 
-datamodule.updateRestriction = (nodeId, name, keys, mode) ->
+datamodule.updateRestriction = (nodeId, name, keys, mode, sessionInfo) ->
     log "datamodule.updateRestriction"
     return
 

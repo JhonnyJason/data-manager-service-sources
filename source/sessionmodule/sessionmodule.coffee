@@ -37,9 +37,7 @@ sessionmodule.putInfo = (code, info) ->
 sessionmodule.getInfo = (code) ->
     log "sessionmodule.getInfo"
     throw new Error("No session available!") unless sessionMemory[code]?
-    info = sessionMemory[code]
-    delete sessionMemory[code]
-    return info
+    return sessionMemory[code]
 
 
 module.exports = sessionmodule
