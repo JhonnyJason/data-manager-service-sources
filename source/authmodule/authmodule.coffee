@@ -10,39 +10,74 @@ print = (arg) -> console.log(arg)
 #endregion
 
 ############################################################
-specialAuth = {
-    "addClientToServe": authenticateClientAdd, 
-    "getNodeId": isKnownClientSignature,
-    "startSession": isKnownClientSignature
-}
-
-validCodes = {}
+cfg = null
+session = null
+decay = null
 
 ############################################################
-authmodule.initialize = () ->
+specialAuth = null
+vaildCodeMemory = {}
+
+############################################################
+authmodule.initialize = ->
     log "authmodule.initialize"
+
+    cfg = allModules.configmodule
+    session = allModules.sessionmodule
+    decay = allModules.memorydecaymodule
+
+    ########################################################
+    ## TODO remove this code!
+    vaildCodeMemory["..."] = {}
+    ##
+
+    decay.createMemoryObjectFor(vaildCodeMemory)
+    
+
+    ########################################################
+    specialAuth = cfg.specialAuth
+    if !specialAuth? then specialAuth = {}
+
+    keys = Object.keys(specialAuth)
+    for key in keys
+        specialAuth[key] = specialAuthFunctionFor(specialAuth[key])
+
+    Object.freeze(specialAuth)
     return
 
 ############################################################
 #region internal Functions
-authenticateClientAdd = (req) ->
-    log "authenticateClientAdd"
-    olog req.body
+specialAuthFunctionFor = (typeString) ->
+    if typeString == "masterSignature" then return isMasterSignature
+    if typeString == "knownClientSignature" then return isKnownClientSignature
+    throw new Error("Invalid specialAuth typeString in config: '"+typeString+"' !")
     return
+
+############################################################
+isMasterSignature = (req) ->
+    log "isMasterSignature"
+    olog req.body
+    return true
 
 isKnownClientSignature = (req) ->
     log "isKnownClientSignature"
     olog req.body
-    return
+    return true
 
+############################################################
 isValidAuthCode = (code) ->
     log "isValidAuthCode"
     olog {code}
-    return
+    throw new Error("Invalid authCode!") unless vaildCodeMemory[code]?
+    sessionInfo = vaildCodeMemory[code]
+    delete vaildCodeMemory[code]
+
+    session.putInfo(code, sessionInfo)
+    return true
 
 generateNewAuthCode = (oldCode) ->
     log "generateNewAuthCode"
-    throw new Error("Old Code Still Valid!") if validCodes[oldCode]?
+    throw new Error("Old Code Still Valid!") if vaildCodeMemory[oldCode]?
     olog {oldCode}
     return
 
@@ -51,6 +86,7 @@ generateNewAuthCode = (oldCode) ->
 ############################################################
 #region exposed Functions
 authmodule.authenticateRequest = (req, res, next) ->
+    # log "authmodule.authenticateRequest"
     try
         code = req.body.authCode
         if specialAuth[req.path]? 
@@ -63,6 +99,7 @@ authmodule.authenticateRequest = (req, res, next) ->
 
 ############################################################
 authmodule.getSignedNodeId = ->
+    log "authmodule.getSignedNodeId"
     result = {
         "publicKey": "...",
         "timestamp": "...",

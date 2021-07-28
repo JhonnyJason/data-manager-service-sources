@@ -8,7 +8,10 @@ debugmodule.initialize = () ->
 ############################################################
 debugmodule.modulesToDebug = 
     unbreaker: true
+    authmodule: true
     # configmodule: true
+    memorydecaymodule: true
+    sessionmodule: true
     # startupmodule: true
 
 #region exposed variables
