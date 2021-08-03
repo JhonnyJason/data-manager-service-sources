@@ -9,6 +9,11 @@ olog = (obj) -> log "\n" + ostr(obj)
 print = (arg) -> console.log(arg)
 #endregion
 
+
+############################################################
+secUtl = require("secret-manager-crypto-utils")
+clientFactory = require("secret-manager-client")
+
 ############################################################
 cfg = null
 session = null
@@ -17,6 +22,10 @@ decay = null
 ############################################################
 specialAuth = null
 validCodeMemory = {}
+tMS = 20000
+
+knownClients = null
+client = null
 
 ############################################################
 authmodule.initialize = ->
@@ -26,6 +35,9 @@ authmodule.initialize = ->
     session = allModules.sessionmodule
     decay = allModules.memorydecaymodule
 
+    tMS = cfg.timestampFrameMS
+    knownClients = {}
+    client = await clientFactory.createClient(cfg.secretKey, cfg.publicKey, cfg.secretManagerURL)
     ########################################################
     ## TODO remove this code!
     validCodeMemory["..."] = {text:"I am a session!"}
@@ -54,15 +66,66 @@ specialAuthFunctionFor = (typeString) ->
     return
 
 ############################################################
+assertValidTimestamp = (timestamp) ->
+    now = Date.now()
+    now_rounded = now - (now % tMS)
+
+    if timestamp != now_rounded then now_rounded -= tMS
+    else return
+    if timestamp != now_rounded then now_rounded += 2 * tMS
+    else return
+    if timestamp != now_rounded then throw new Error("Invalid Timestamp!")
+    else return
+    return
+
 isMasterSignature = (req) ->
     log "isMasterSignature"
-    olog req.body
-    return true
+    data = req.body
+    route = req.path
+    
+    idHex = cfg.masterPublicKey
+    
+    olog data
+    olog {route}
+
+    assertValidTimestamp(data.timestamp)
+    
+    sigHex = data.signature
+    if !sigHex then throw new Error("No Signature!")
+    delete data.signature
+    content = route+JSON.stringify(data)
+
+    try
+        verified = await secUtl.verify(sigHex, idHex, content)
+        if !verified then throw new Error("Invalid Signature!")
+        return true
+    catch err then throw new Error("Error on Verify! " + err)
+    return false    
 
 isKnownClientSignature = (req) ->
     log "isKnownClientSignature"
-    olog req.body
-    return true
+    data = req.body
+    route = req.path
+    
+    idHex = data.publicKey
+    throw new Error("Client unknown!") unless knownClients[idHex]
+    
+    olog data
+    olog {route}
+
+    assertValidTimestamp(data.timestamp)
+    
+    sigHex = data.signature
+    if !sigHex then throw new Error("No Signature!")
+    delete data.signature
+    content = route+JSON.stringify(data)
+
+    try
+        verified = await secUtl.verify(sigHex, idHex, content)
+        if !verified then throw new Error("Invalid Signature!")
+        return true
+    catch err then throw new Error("Error on Verify! " + err)
+    return false
 
 ############################################################
 isValidAuthCode = (code) ->
@@ -100,9 +163,11 @@ authmodule.authenticateRequest = (req, res, next) ->
     # log "authmodule.authenticateRequest"
     try
         code = req.body.authCode
-        if specialAuth[req.path]? 
-            if specialAuth[req.path](req) then next()
+        if specialAuth[req.path]?
+            authorized = await specialAuth[req.path](req)
+            if authorized then next()
             else throw new Error("Wrong Special Auth!")
+            return
         else if isValidAuthCode(code) then next()
         else throw new Error("Wrong Auth Code!")
         generateNewAuthCode(code, req)
@@ -111,21 +176,39 @@ authmodule.authenticateRequest = (req, res, next) ->
 ############################################################
 authmodule.getSignedNodeId = ->
     log "authmodule.getSignedNodeId"
-    result = {
-        "publicKey": "...",
-        "timestamp": "...",
-        "signature": "..."
-    }
+    publicKey = cfg.publicKey
+    timestamp = Date.now()
+    timestamp = timestamp - (timestamp % tMS)
+    content = JSON.stringify({publicKey, timestamp})
+    signature = await secUtl.createSignature(content, cfg.secretKey)
+    result = { publicKey, timestamp, signature }
     return result
 
 ############################################################
 authmodule.addClient = (publicKey) ->
     log "authmodule.addClient"
+    response = await client.startAcceptingSecretsFrom(publicKey)
+    olog response
+    throw new Error("Could not add Client!") unless response.ok
+    knownClients[publicKey] = true
     return
 
 ############################################################
 authmodule.startSession = (publicKey) ->
     log "authmodule.startSession"
+    sessionSeed = await secUtl.createRandomLengthSalt()
+    response = await client.shareSecretTo(publicKey, "sessionSeed", sessionSeed)
+    olog response
+    clientSeed = await client.getSecretFrom("sessionSeed", publicKey)
+    
+    seed = clientSeed + sessionSeed
+    authCode = await secUtl.sha256Hex(seed)
+    olog { authCode }
+
+    sessionInfo = {publicKey}
+
+    validCodeMemory[authCode] = sessionInfo
+    decay.letForget(authCode, validCodeMemory, decayMS)
     return
 
 #endregion
